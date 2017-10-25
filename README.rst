@@ -38,28 +38,35 @@ Approach
 =========
 
 In this repo I want to experiment with some machine learning algorithms.
-There are three parts
+There are four parts
 
 I: Generating data sets
 ----------------------------------
 
-A very large labeled test training set is generated (generate.sh) by a text-to-speech program (espeak). We are working with phonemes.
+The approach is to build commands off the simplest utterances: single-syllable verbs. 
+
+How to create a large training set? With text-to-speech programs and varying noise sources. Whether well-trained methods can translate to the real world will teach us something about knowledge transfer.
+First we create the clean utterances. A very large labeled test training set is generated (generate.sh) by a text-to-speech program (espeak). For simplicity we are working with phonemes instead of words.
 I selected all english single-syllable word as labels, obtained their phonemes (thanks to BEEP), and generate audio files varying
 
 * speaker
 * stress
 * pitch
 * speed
+* (and further down, noise level and noise type)
 
 For each word there are 1500-2000 samples. There are 5153 words in total, 558 in the "verbs" subset.
 
-I also pass the audio through OPUS (formerly speex) with a low bitrate. Because this compression is optimized for speech, hopefully it filters out non-speech. Also, it saves disk space.
+I pass the audio through OPUS (formerly speex) with a low constant bitrate. Because this compression (opus was formerly speex) is optimized for speech, hopefully it filters out non-speech to some degree. More importantly, it saves disk space.
 
-II: Detecting voice (TODO)
------------------------------
+II: Detecting voice activity (TODO)
+-------------------------------------
 
-Training set: I should generate a stream of audio by stitching together random word audio samples (quiet times cropped) and random lengths of silence (with varying noise properties). A labelling stream should be generated at the same time, identifying silent times. 
-Short-time Fourier Transforms (STFT) should be a good input format.
+Training set: We generate a very long stream of audio by stitching together random word audio samples (quiet times cropped) and random lengths of silence (with varying noise properties). A labelling stream should be generated at the same time, identifying silent times. 
+
+This is sketched in trainvoicedetect.py
+
+Short-time Fourier Transforms (STFT) should be a good input format for algorithms.
 
 Methods: 
 
@@ -79,7 +86,10 @@ Methods:
 IV: Putting it together (TODO)
 ------------------------------------
 
-The best method of Part II should detect voice; the audio segment can then be isolated by cropping before and after. The best method of Part III can then be applied to this audio piece, identifying the spoken word. Finally, the command associated with that label can be executed (e.g. just saying the word back).
+The best method of Part II should detect voice; the audio segment can then be isolated by cropping before and after. The best method of Part III can then be applied to this audio piece, identifying the spoken word. 
+Finally, the command associated with that label can be executed. 
+
+For example, the computer could just be saying the identified word back, or run a program, shut down, change the speaker volume, etc.
 
 
 
