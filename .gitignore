@@ -2,3 +2,4 @@ db
 *.wav
 *~
 *.pyc
+coredump*

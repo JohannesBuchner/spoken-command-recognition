@@ -2,7 +2,7 @@
 Sound Commander
 =============================
 
- A large database of free audio samples (10M words), a test bed for voice activity detection algorithms and for recognition of syllables (single-word commands).
+A large database of free audio samples (10M words), a test bed for voice activity detection algorithms and for recognition of syllables (single-word commands).
 
 -----------
 Background
@@ -12,22 +12,23 @@ Background
 
 Open source speech recognition is crap, for two reasons.
 
-*Reason 1*: Because it tries to do everything
+**Reason 1**: Because it tries to do everything::
 
 	soundwaves -> phonemes -> textual representation -> meaning
 
 Why not solve a simpler problem?
 
 I do not need to have my computer "translate" sounds into text, or "understand" a meaning.
-We insist on having a human-human interaction with a computer? 
-We use mice and keyboards, they are not "native language" for us. We not also for
-speech interaction with computers, learn a format that is easy for a computer?
+Why should we insist on having a human-human interaction with a computer? 
+We use mice and keyboards, they are not "native language" for human-human interaction. 
+Why not also for speech interaction with computers, define and learn a format 
+that is easy for a computer?
 
-I just want to tell my computer a command and it does something. So I only need 
+I just want to tell my computer a command and it does something. So I only need::
 
 	soundwaves -> label
 
-*Reason 2*: It is hard to enter for programmers because training sets are limited 
+**Reason 2**: It is hard to enter for programmers because training sets are limited 
 and/or hard to obtain. Machine learning algorithms need a vast amount of data 
 to be successful and freely available datasets just aren't there.
 
