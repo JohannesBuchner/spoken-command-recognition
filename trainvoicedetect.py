@@ -9,7 +9,7 @@ import random
 import sys, os
 import numpy
 
-words = [row.strip().split()[0] for row in open('words') if row.startswith('a')]
+words = [row.strip().split()[0] for row in open('words') if row.startswith('b')]
 
 # build a sentence
 nwords = numpy.random.poisson(numpy.random.poisson(10)+1)
@@ -65,7 +65,8 @@ v = random.uniform(0, 0.03)
 print 'sox ' + ' '.join(files_clean) + ' sentence_clean.wav'
 print 'sox sentence_clean.wav -p synth %s vol %s | sox -m sentence_clean.wav - sentence_noisy.wav' % (noise, v)
 
-
-
+# TODO: read in sentence_noisy.wav and make SFTF from frames
+# TODO: read in sentence_reference.wav and label silent + non-silent frames
+# TODO: pass the two to a machine-learning method
 
 
