@@ -1,0 +1,39 @@
+This pronunciation dictionary is derived from many sources and many
+people have made significant contributions.  Please read the
+ACKNOWLEDGEMENTS file.
+
+The pronunciation dictionary is derived in part from the Oxford Text
+Archive releases 710 and 1054.  These are copyrighted by Oxford
+University Press (OUP) and the Medical research council (MRC).  This
+work inherits the following restrictions:
+
+a) The dictionary may only be used for research (from MRC sources)
+b) The dictionary must not be used commercially (from OUP sources)
+
+These sources may be found at:
+
+  ftp://ota.ox.ac.uk/pub/ota/public/dicts/710/
+  ftp://ota.ox.ac.uk/pub/ota/public/dicts/1054/
+
+and this derived work has location:
+
+  ftp://svr-ftp.eng.cam.ac.uk/pub/comp.speech/dictionaries/beep.tar.gz
+
+Considerable effort has been expended to produce this pronunciation
+dictionary.  If you make significant use of this resource, you are
+requested to contribute.  Tasks that need to be done are:
+
+a) Contribution of new words with pronunciations
+b) Adding lexical stress to those entries that do not have it.
+c) Any other feedback/bug fixes, etc.
+
+In addition, you are requested to acknowledge this work if it
+contributes significantly to any publication.
+
+
+Tony Robinson
+ajr@eng.cam.ac.uk
+Cambridge University
+Engineering Department
+Trumpington Street
+Cambridge, UK
