@@ -13,12 +13,12 @@ import stft
 import subprocess
 import itertools
 import h5py
+import joblib
+import tempfile
 import matplotlib.pyplot as plt
 from PIL import Image
 
 numpy.random.seed(1)
-
-verbs = [row.strip().split()[0] for row in open('verbs')]
 
 framelength = 128
 def wav_to_spectrogram(filename):
@@ -45,68 +45,68 @@ for noise in noisenames:
 print '%-10s\tvariant\tvolume\tnoisetype\tnoisevolume' % ('word')
 maxlength = 30
 imgshape = (24, 24)
+
+def preprocess_word(wordfile, noiseframes):
+	# read in word file, make SFTF
+	print 'processing %s' % wordfile
+	fd, tmpfile = tempfile.mkstemp('.wav')
+	p = subprocess.Popen(['sox', wordfile, '-t', 'wav', '-r', '8000', '-c', '1', tmpfile])
+	p.wait()
+	specgramabs = wav_to_spectrogram(tmpfile)
+	os.unlink(tmpfile)
+	voicepart = specgramabs[:,8:]
+	voiceactive = voicepart.sum(axis=1) > voicepart.sum(axis=1).max() * 1e-3
+	end = numpy.where(voiceactive)[0].max()
+	voicepart = specgramabs[:end,:]
+	nframes, nspec = voicepart.shape
+	# stack onto SFTF frames the noise frames, scaled
+	for i in range(nframes):
+		voicepart[i,:] += noiseframes[i]
+	# 0Hz, 60Hz, 120Hz, ... - 4000Hz are the frequencies we stored
+	# we store 500Hz upwards, which is audible by humans and related to speech
+	img = voicepart[:,8:]
+	# reshape to common shape (e.g. 24x24 pixels, 256 colors)
+	# now normalise to 1 and take logarithms
+	img = (numpy.log(voicepart / voicepart.max() * 0.99 + 1e-10) + 255).astype('uint8')
+	img = scipy.misc.imresize(img, size=imgshape, mode='F')
+	return img
+
+def generate_noise_frames(nframes=256):
+	noisesource = random.choice(noises.keys())
+	noisevolume = random.uniform(0, 0.03)
+	for i in range(nframes):
+		yield noisevolume * next(noises[noisesource])
+
+
+print 'scanning directory...'
+wordfile = sys.argv[1]
+worddir = sys.argv[2]
+outfile = sys.argv[3]
+all_words = []
 labels = []
-data = []
+verbs = [row.strip().split()[0] for row in open(wordfile)]
 for i, word in enumerate(verbs):
-	data_this_word = []
-	for entry in os.listdir(os.path.join('db.verbs', word)):
-		wordfile = os.path.join('db.verbs', word, entry)
-		# read in word file, make SFTF
-		p = subprocess.Popen(['sox', wordfile, '-t', 'wav', '-r', '8000', '-c', '1', 'tmp.wav'])
-		#p = subprocess.Popen(['sox', wordfile, '-t', 'wav', 'tmp.wav'])
-		#p = subprocess.Popen(['sox', wordfile, '-t', 'wav', '-r', '8000', '-c', '1', 'tmp.wav', 'silence', '1', '0.1', '0.1%', 'reverse', 'silence', '1', '0.1', '0.1%', 'reverse'])
-		p.wait()
-		#print wordfile
-		#fs, audio = wav.read('tmp.wav')
-		specgramabs = wav_to_spectrogram('tmp.wav')
-		#if len(audio) == 0: continue
-		#specgram = stft.spectrogram(audio, framelength=framelength)
-		#specgramabs = numpy.abs(specgram).transpose()
-		#print specgramabs.shape
-		voicepart = specgramabs[:,8:]
-		voiceactive = voicepart.sum(axis=1) > voicepart.sum(axis=1).max() * 1e-3
-		end = numpy.where(voiceactive)[0].max()
-		#print voiceactive, end
-		#plt.figure()
-		#plt.imshow(numpy.log10(specgramabs))
-		#plt.show()
-		voicepart = specgramabs[:end,:]
-		#specgramabs /= specgramabs.max()
-		#print specgramabs.shape
-		nframes, nspec = voicepart.shape
-		#print nframes, nspec, voicepart.max()
-		
-		#assert nframes < maxlength, (nframes, maxlength)
-		#full = numpy.zeros((maxlength, nspec))
-		#full[:nframes,:] = specgramabs
-		## The following could be repeated several times to increase the sample size
+	word_entries = [os.path.join(worddir, word, entry) for entry in sorted(os.listdir(os.path.join(worddir, word)), key=int)]
+	labels += [i] * len(word_entries)
+	all_words.append((word, word_entries))
+print 'scanning directory done.'
 
-		## modify volume by multiplying SFTF amplitudes
-		#sourcevolume = random.normalvariate(1,0.2)
+f = h5py.File(outfile, 'w')
+f.create_dataset('data', shape=(len(labels), imgshape[0], imgshape[1]))
+f.create_dataset('labels', data=labels, shuffle=True, compression='gzip')
 
-		#combination = full * sourcevolume
-		# choose a random noise source
-		noisesource = random.choice(noises.keys())
-		noisevolume = random.uniform(0, 0.03)
-		# stack onto SFTF frames the noise frames, scaled
-		#for i in range(maxlength):
-		#	combination[i,:] += noisevolume * next(noises[noisesource])
-
-		for i in range(nframes):
-			voicepart[i,:] += noisevolume * next(noises[noisesource])
-		
-		# 0Hz, 60Hz, 120Hz, ... - 4000Hz are the frequencies we stored
-		# we store 500Hz upwards, which is audible by humans and related to speech
-		img = voicepart[:,8:]
-		# reshape to common shape (e.g. 24x24 pixels, 256 colors)
-		# now normalise to 1 and take logarithms
-		img = (numpy.log(voicepart / voicepart.max() * 0.99 + 1e-10) + 255).astype('uint8')
-		img = scipy.misc.imresize(img, size=imgshape, mode='F')
-		print '%-10s\t%s\t%-20s\t%.2f' % (word, entry, noisesource, noisevolume)
-		data.append(img)
-		data_this_word.append(img)
-		labels.append(i)
+j = 0
+for i, (word, wordfiles) in list(enumerate(all_words))[::-1]:
+	noise = [list(generate_noise_frames()) for _ in wordfiles]
 	
+	data_this_word = joblib.Parallel(n_jobs=-1)(joblib.delayed(preprocess_word)(wordfile, noiseframes) for wordfile, noiseframes in zip(wordfiles, noise))
+	
+	for i, img in enumerate(data_this_word):
+		f['data'][j,:,:] = img 
+		j = j + 1
+	
+	
+	print 'plotting for %s...' % word
 	plt.figure(figsize=(20,20))
 	plt.suptitle(word)
 	plotentries = random.sample(data_this_word, 25)
@@ -115,8 +115,9 @@ for i, word in enumerate(verbs):
 		plt.imshow(img, cmap='RdBu')
 	plt.savefig('db.verbs.%s.png' % word, bbox_inches='tight')
 	plt.close()
+	print 'plotting done.'
 	#break
-with h5py.File('db.verbs.hdf5', 'w') as f:
-	f.create_dataset('data', data=data, shuffle=True, compression='gzip')
-	f.create_dataset('labels', data=labels, shuffle=True, compression='gzip')
+#with h5py.File('db.verbs.hdf5', 'w') as f:
+#	f.create_dataset('data', data=data, shuffle=True, compression='gzip')
+#	f.create_dataset('labels', data=labels, shuffle=True, compression='gzip')
 

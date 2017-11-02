@@ -3,3 +3,6 @@ db
 *~
 *.pyc
 coredump*
+*.hdf5
+*.png
+*.pdf
