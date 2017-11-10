@@ -57,8 +57,19 @@ def preprocess_word(wordfile, noiseframes):
 	voicepart = specgramabs[:,8:]
 	voiceactive = voicepart.sum(axis=1) > voicepart.sum(axis=1).max() * 1e-3
 	end = numpy.where(voiceactive)[0].max()
-	voicepart = specgramabs[:end,:]
-	nframes, nspec = voicepart.shape
+	nallframes, nspec = specgramabs.shape
+	# pad with empty frames at the beginning and back
+	# extend duration by up to 40%
+	# cut off up to 10% at the beginning and end
+	voice_start = numpy.random.randint(0, int(end * 0.1))
+	voice_end = numpy.random.randint(int(end*0.9), nallframes)
+	voice_start2 = numpy.random.randint(0, int(end * 0.1))
+	nframes_max = max(int(nallframes * 1.4), voice_start2+voice_end-voice_start)
+	nframes_min = min(int(nallframes * 1.4), voice_start2+voice_end-voice_start)
+	nframes = numpy.random.randint(nframes_min, nframes_max)
+	voicepart = numpy.zeros((nframes, nspec))
+	#print nallframes, voice_start, voice_end, nframes, voice_start2
+	voicepart[voice_start2:voice_start2+voice_end-voice_start,:] = specgramabs[voice_start:voice_end,:]
 	# stack onto SFTF frames the noise frames, scaled
 	for i in range(nframes):
 		voicepart[i,:] += noiseframes[i]
@@ -71,7 +82,7 @@ def preprocess_word(wordfile, noiseframes):
 	img = scipy.misc.imresize(img, size=imgshape, mode='F')
 	return img
 
-def generate_noise_frames(nframes=256):
+def generate_noise_frames(nframes=512):
 	noisesource = random.choice(noises.keys())
 	noisevolume = random.uniform(0, 0.03)
 	for i in range(nframes):
@@ -100,6 +111,7 @@ for i, (word, wordfiles) in list(enumerate(all_words))[::-1]:
 	noise = [list(generate_noise_frames()) for _ in wordfiles]
 	
 	data_this_word = joblib.Parallel(n_jobs=-1)(joblib.delayed(preprocess_word)(wordfile, noiseframes) for wordfile, noiseframes in zip(wordfiles, noise))
+	#data_this_word = [preprocess_word(wordfile, noiseframes) for wordfile, noiseframes in zip(wordfiles, noise)]
 	
 	for i, img in enumerate(data_this_word):
 		f['data'][j,:,:] = img 
