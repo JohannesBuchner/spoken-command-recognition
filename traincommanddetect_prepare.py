@@ -107,7 +107,7 @@ f.create_dataset('data', shape=(len(labels), imgshape[0], imgshape[1]))
 f.create_dataset('labels', data=labels, shuffle=True, compression='gzip')
 
 j = 0
-for i, (word, wordfiles) in list(enumerate(all_words))[::-1]:
+for i, (word, wordfiles) in list(enumerate(all_words)):
 	noise = [list(generate_noise_frames()) for _ in wordfiles]
 	
 	data_this_word = joblib.Parallel(n_jobs=-1)(joblib.delayed(preprocess_word)(wordfile, noiseframes) for wordfile, noiseframes in zip(wordfiles, noise))

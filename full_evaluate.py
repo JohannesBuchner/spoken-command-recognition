@@ -1,11 +1,10 @@
 """
 
-Use Keras and a simple Long short-memory neural network to detect voice activity
+This connects everything:
 
+1) Voice activity detection to find start&end of commands
+2) Command detection to identify the command
 
-Notes: RandomForest and MLP10 do very well (95% correctness) with log preprocessor
-Worse if only current sample is considered (90%)
-Worse if only current sample and 3s median is considered (91%)
 
 
 
@@ -55,7 +54,7 @@ print("  Training command classifier with SVM-RB ...")
 C = 0.1
 gamma = 0.05
 t0 = time()
-clf = SVC(C=C, kernel='rbf', gamma=gamma)
+clf = SVC(C=C, kernel='rbf', gamma=gamma, probability=True)
 clf = clf.fit(X_train_pca, labels)
 #clf = RandomForestClassifier(n_estimators=100)
 #clf = clf.fit(X_train_pca, labels)
@@ -67,7 +66,15 @@ def detect_meaning(voicepart):
 	# now normalise to 1 and take logarithms
 	img = (numpy.log(voicepart / voicepart.max() * 0.99 + 1e-10) + 255).astype('uint8')
 	img = scipy.misc.imresize(img, size=imgshape, mode='F')
-	label = clf.predict(pca.transform(img.reshape(1,-1)))
+	probs = clf.predict_proba(pca.transform(img.reshape(1,-1)))[0]
+	print '      probabilities:', probs
+	second, first = probs.argsort()[-2:]
+	if probs[first] + probs[second] < 0.75:
+		return img, 'unsure'
+	if probs[first] / probs[second] > 2:
+		return img, first
+	label = (first, '%.2f' % probs[first], second, '%.2f' % probs[second])
+	#label = clf.predict(pca.transform(img.reshape(1,-1)))
 	return img, label
 
 print 'Voice activity detection:'
@@ -79,7 +86,7 @@ with h5py.File('voicedetect-training.hdf5') as f:
 
 print '  training voice activity detector ...'
 t0 = time()
-vadclf = RandomForestClassifier(n_estimators=10)
+vadclf = RandomForestClassifier(n_estimators=40)
 #clf = MLPClassifier(hidden_layer_sizes=(10,))
 vadclf = vadclf.fit(X, Y)
 print '  training voice activity detector done (%.1fs)' % (time() - t0)
@@ -106,26 +113,30 @@ j = 1
 for i in range(look_back, len(data)):
 	dataset = data[i-look_back:i+1,:64][::-1][::stride][::-1]
 	dataset2 = (numpy.log(dataset + 1e-3) - numpy.log(1e-3)) / 30.
-	y = vadclf.predict(dataset2.flatten().reshape((1,-1)))
+	yprob = vadclf.predict_proba(dataset2.flatten().reshape((1,-1)))
+	#print yprob[0,1]
+	y = yprob[0,1] > 0.625
 	#print i, labels[i], y, numpy.log10(dataset[-1,::8]).astype(int)
-	if y > 0:
+	if y:
 		if istart is None:
 			# starting segment
 			istart = i
+			#print '  starting segment:', istart
 		# continuing segment
 		ioff = i
 	else:
-		if ioff and istart and i > ioff + 3 and ioff > istart + 10:
-			# emit segment
-			img, label = detect_meaning(data[istart:ioff,:])
-			print '  found some activity:', istart, ioff, label
-			plt.title(label)
-			plt.imshow(img, cmap='RdBu')
-			plt.savefig('example.%d.png' % j, bbox_inches='tight')
-			plt.close()
-			ioff = None
-			istart = None
-			j += 1
+		if ioff and istart and i > ioff + 3:
+			if ioff > istart + 10:
+				# emit segment
+				img, label = detect_meaning(data[istart:ioff,:])
+				print '  found some activity:', istart, ioff, label
+				plt.title(label)
+				plt.imshow(img, cmap='RdBu')
+				plt.savefig('example.%d.png' % j, bbox_inches='tight')
+				plt.close()
+				ioff = None
+				istart = None
+				j += 1
 		
 	#print labels[i], y
 

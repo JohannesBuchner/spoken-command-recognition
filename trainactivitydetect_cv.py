@@ -1,15 +1,19 @@
 """
 
-Use Keras and a simple Long short-memory neural network to detect voice activity
+Detect voice activity
 
+Here we test and train multiple methods with cross-validation.
+
+Long short term memory neural networks
+SVM
+Random Forest
 
 Notes: RandomForest and MLP10 do very well (95% correctness) with log preprocessor
 Worse if only current sample is considered (90%)
 Worse if only current sample and 3s median is considered (91%)
 
-
-
 """
+
 
 import sys, os
 import numpy
@@ -74,19 +78,21 @@ from sklearn.preprocessing import quantile_transform
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.svm import SVC
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, roc_curve
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import fbeta_score, make_scorer
+import matplotlib.pyplot as plt
 ftwo_scorer = make_scorer(fbeta_score, beta=0.2)
 
 def train_and_evaluate(name, clf):
+	print
 	sys.stdout.write('running %s ...\r' % name)
 	sys.stdout.flush()
 	t0 = time()
 	q = cross_val_score(clf, X_all2, Y_all, cv=5, scoring=ftwo_scorer)
-	print '%2.2f %s (%.1fs)' % (q.mean(), name, time() - t0)
+	print '%2.2f %s (training speed: %.1fs)' % (q.mean(), name, time() - t0)
 
 	i = len(X_all2)*2/3
 	X_tr, X_ts, y_tr, y_ts = Z_all[:i], Z_all[i:], Y_all[:i], Y_all[i:]
@@ -94,9 +100,24 @@ def train_and_evaluate(name, clf):
 	t0 = time()
 	for i in range(10):
 		y_pred = clf.predict(X_ts)
-	print 'confusion matrix: %.2fs' % (time() - t0)
+	y_scores = clf.predict_proba(X_ts)
+	print 'confusion matrix: (eval speed: %.2fs)' % (time() - t0)
 	cnf_matrix = confusion_matrix(y_ts, y_pred)
 	print cnf_matrix
+	print 'ROC curve plot...'
+	#print y_scores[:,0] + y_scores[:,1], (y_scores[:,0] + y_scores[:,1]).min(), (y_scores[:,0] + y_scores[:,1]).max()
+	fpr, tpr, thresholds = roc_curve(y_ts, y_scores[:,1])
+	plt.title(name)
+	#print fpr, tpr, thresholds
+	print '5% FPR: at threshold', thresholds[fpr < 0.05][-1], 'with efficiency', tpr[fpr < 0.05][-1]*100, '%'
+	print '1% FPR: at threshold', thresholds[fpr < 0.01][-1], 'with efficiency', tpr[fpr < 0.01][-1]*100, '%'
+	plt.plot(fpr, tpr, '-', color='r')
+	plt.plot([0,1], [0,1], ':', color='k')
+	plt.xlabel('False positive rate')
+	plt.ylabel('True positive rate')
+	plt.savefig('trainactivitydetect_scores_%s.pdf' % name, bbox_inches='tight')
+	plt.close()
+	
 
 #for preprocessor in ['quantiles', 'normalised-pca', 'log-pca', 'normalised', 'log']:
 #for preprocessor in ['normalised-pca', 'log', 'log-pca']:
@@ -151,40 +172,36 @@ for preprocessor in ['log', 'logscale']: #, 'log-pca', 'normalised']: #, 'quanti
 		train_and_evaluate('RandomForest4', clf = RandomForestClassifier(n_estimators=4))
 		train_and_evaluate('RandomForest10', clf = RandomForestClassifier(n_estimators=10))
 		train_and_evaluate('RandomForest40', clf = RandomForestClassifier(n_estimators=40))
-		train_and_evaluate('RandomForest100', clf = RandomForestClassifier(n_estimators=100))
+		#train_and_evaluate('RandomForest100', clf = RandomForestClassifier(n_estimators=100))
 	
-		#train_and_evaluate('AdaBoost', clf = AdaBoostClassifier(n_estimators=40))
+		train_and_evaluate('AdaBoost', clf = AdaBoostClassifier(n_estimators=40))
 	
-		#train_and_evaluate('GradientBoosting', clf = GradientBoostingClassifier(n_estimators=40))
+		train_and_evaluate('GradientBoosting', clf = GradientBoostingClassifier(n_estimators=40))
 	
-	train_and_evaluate('MLP2:', clf = MLPClassifier(hidden_layer_sizes=(2,)))
-	train_and_evaluate('MLP10:', clf = MLPClassifier(hidden_layer_sizes=(10,)))
-	train_and_evaluate('MLP40:', clf = MLPClassifier(hidden_layer_sizes=(40,)))
-	
-	#C = 0.05
-	#gamma = 0.05
-	##print("Training classifier with SVM-RB with C=%s gamma=%s" % (C, gamma))
-	#train_and_evaluate('SVM', clf = SVC(C=C, kernel='rbf', gamma=gamma))
+	train_and_evaluate('MLP2', clf = MLPClassifier(hidden_layer_sizes=(2,)))
+	train_and_evaluate('MLP10', clf = MLPClassifier(hidden_layer_sizes=(10,)))
+	train_and_evaluate('MLP40', clf = MLPClassifier(hidden_layer_sizes=(40,)))
 	
 	"""
+	# Very slow to train...
+	C = 0.05
+	gamma = 0.05
+	#print("Training classifier with SVM-RB with C=%s gamma=%s" % (C, gamma))
+	train_and_evaluate('SVM', clf = SVC(C=C, kernel='rbf', gamma=gamma, probability=True))
+	
 	C = 0.5
 	gamma = 0.05
 	#print("Training classifier with SVM-RB with C=%s gamma=%s" % (C, gamma))
-	train_and_evaluate('SVM', clf = SVC(C=C, kernel='rbf', gamma=gamma))
+	train_and_evaluate('SVM', clf = SVC(C=C, kernel='rbf', gamma=gamma, probability=True))
 
 	C = 1
 	gamma = 0.05
 	#print("Training classifier with SVM-RB with C=%s gamma=%s" % (C, gamma))
-	train_and_evaluate('SVM', clf = SVC(C=C, kernel='rbf', gamma=gamma))
+	train_and_evaluate('SVM', clf = SVC(C=C, kernel='rbf', gamma=gamma, probability=True))
 
 	C = 5
 	gamma = 0.05
 	#print("Training classifier with SVM-RB with C=%s gamma=%s" % (C, gamma))
-	train_and_evaluate('SVM', clf = SVC(C=C, kernel='rbf', gamma=gamma))
-
-	#clf = MLPClassifier(hidden_layer_sizes=(100,))
-	#print 'MLP100:', cross_val_score(clf, X_all2, Y_all, cv=5).mean()
+	train_and_evaluate('SVM', clf = SVC(C=C, kernel='rbf', gamma=gamma, probability=True))
 	"""
-
-
-
+	

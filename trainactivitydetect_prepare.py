@@ -43,11 +43,12 @@ outfile = sys.argv[3]
 words = [row.strip().split()[0] for row in open(wordfile)]
 
 def generate_word():
-	word = random.choice(words)
+	wordi = random.randint(0, len(words)-1)
+	word = words[wordi]
 	entries = os.listdir(os.path.join(worddir, word))
 	entry = random.choice(entries)
 	volume = random.normalvariate(1,0.2)
-	return (word, os.path.join(worddir, word, entry), volume)
+	return (wordi, word, os.path.join(worddir, word, entry), volume)
 
 
 # build a sentence
@@ -69,6 +70,7 @@ for j, noisesource in enumerate(noisenames):
 	files_clean = []
 	data = []
 	labels = []
+	labels_words_used = []
 	files_reference = []
 
 	for i, part in enumerate(sentence):
@@ -80,7 +82,8 @@ for j, noisesource in enumerate(noisenames):
 			print '  %.2fs silence' % length
 			commands.append('sox -n -r 48000 -c 1 %s trim 0.0 %.2f' % (filename, length))
 		elif part[0] == 'word':
-			_word, (word, wordfile, volume) = part
+			_word, (wordi, word, wordfile, volume) = part
+			labels_words_used.append(wordi)
 			print '  %s  vol=%.2f' % (word, volume)
 			#commands.append('sox -v %.2f %s %s silence 1 0.1 0.1%% reverse silence 1 0.1 0.1%% reverse' % (volume, wordfile, filename))
 			#commands.append('sox %s -p synth whitenoise vol 1 | sox -m %s - %s' % (filename, filename, reffilename))
@@ -130,7 +133,7 @@ for j, noisesource in enumerate(noisenames):
 		data_reference = wav_to_spectrogram(sentence_reference)
 		activity = data_reference.sum(axis=1)
 		labels += (activity > 0)*1
-	
+		
 		print 'reading noisy data...'
 		data_noisy = wav_to_spectrogram(sentence_noisy)
 		print labels.shape, data_reference.shape, data_noisy.shape
@@ -138,6 +141,7 @@ for j, noisesource in enumerate(noisenames):
 		f = h5py.File('%s%d-%.1f.hdf5' % (outfile, j, noisevolumerel), 'w')
 		f.create_dataset('data', data=data_noisy, shuffle=True, compression='gzip')
 		f.create_dataset('labels', data=labels, shuffle=True, compression='gzip')
+		f.create_dataset('labels_words', data=labels_words_used, shuffle=True, compression='gzip')
 		f.attrs['noise-source'] = noisesource
 		f.attrs['noise-volume-normalisation'] = noisevolumeceil
 		f.attrs['noise-volume-relative'] = noisevolumerel
