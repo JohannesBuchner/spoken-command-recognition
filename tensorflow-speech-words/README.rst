@@ -56,7 +56,7 @@ Here I describe how the synthetic audio samples were created.
    Noise samples (airport babble car exhibition restaurant street subway train) come from 
    AURORA (https://www.ee.columbia.edu/~dpwe/sounds/noise/), and additional noise samples were
    synthetically created (ocean white brown pink). (see ../generatenoise.sh for details)
-5. Noise and speech were mixed. The speech volume and offset were varied. The noise source, volume was also varied. See addnoise.py for details.  addnoise2.py is the same, but with lower speech volume and higher noise volume.
+5. Noise and speech were mixed. The speech volume and offset were varied. The noise source, volume was also varied. See addnoise.py for details. addnoise2.py is the same, but with lower speech volume and higher noise volume. All audio files are one second (1s) long and are in wav format (16 bit, mono, 16000 Hz).
 6. Finally, the data was compressed into an archive and uploaded to kaggle.
 
 
