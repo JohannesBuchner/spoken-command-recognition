@@ -48,7 +48,7 @@ Synthetic data creation
 
 Here I describe how the synthetic audio samples were created.
 
-1. The list of words is in "inputwords"
+1. The list of words is in "inputwords". "marvin" was changed to "marvel", because "marvin" does not have a pronounciation coding yet.
 2. Pronounciations were taken from the British English Example Pronciation dictionary (BEEP, http://svr-www.eng.cam.ac.uk/comp.speech/Section1/Lexical/beep.html ). The phonemes were translated for the next step with a translation table (see compile.py for details). 
    This creates the file "words". There are multiple pronounciations and stresses for each word.
 3. A text-to-speech program (espeak) was used to pronounce these words (see generatetfspeech.sh for details). The pronounciation, stress, pitch, speed and speaker were varied. This gives >1000 clean examples for each word.
