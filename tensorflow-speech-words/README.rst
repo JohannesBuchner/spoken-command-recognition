@@ -2,6 +2,8 @@
 Synthetic Speech Commands dataset
 ===================================
 
+On Kaggle: https://www.kaggle.com/jbuchner/synthetic-speech-commands-dataset/
+
 -----------
 Background
 -----------
@@ -72,9 +74,11 @@ Please provide appropriate citations to the above when using this work.
 
 To cite the resulting dataset, you can use:
 
-APA-style citation: "Buchner J. Synthetic Speech Commands: A public dataset for single-word speech recognition, 2017. Available from <url>".
+APA-style citation: "Buchner J. Synthetic Speech Commands: A public dataset for single-word speech recognition, 2017. Available from https://www.kaggle.com/jbuchner/synthetic-speech-commands-dataset/".
 
-BibTeX @article{speechcommands, title={Synthetic Speech Commands: A public dataset for single-word speech recognition.}, author={Buchner, Johannes}, journal={Dataset available from <url>}, year={2017} }
+BibTeX @article{speechcommands, title={Synthetic Speech Commands: A public dataset for single-word speech recognition.}, author={Buchner, Johannes}, journal={Dataset available from https://www.kaggle.com/jbuchner/synthetic-speech-commands-dataset/}, year={2017} }
+
+Thanks to everyone who is trying to improve open source voice detection and speech recognition.
 
 
 
