@@ -78,7 +78,7 @@ APA-style citation: "Buchner J. Synthetic Speech Commands: A public dataset for 
 
 BibTeX @article{speechcommands, title={Synthetic Speech Commands: A public dataset for single-word speech recognition.}, author={Buchner, Johannes}, journal={Dataset available from https://www.kaggle.com/jbuchner/synthetic-speech-commands-dataset/}, year={2017} }
 
-Thanks to everyone who is trying to improve open source voice detection and speech recognition.
+Thanks to everyone trying to improve open source voice detection and speech recognition.
 
 
 
